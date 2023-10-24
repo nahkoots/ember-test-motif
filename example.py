@@ -8,6 +8,12 @@ from sst.ember import *
 
 def example():
     PlatformDefinition.setCurrentPlatform("firefly-defaults")
+    # compA = sst.Component("statTestA", "ember.ExampleMotif")
+    # compA.enableAllStatistics({"type" : "sst.AccumulatorStatistic", 
+    #                        "rate" : "500ms" })
+
+
+
 
     ### Setup the topology
     topo = topoDragonFly()
@@ -35,8 +41,8 @@ def example():
     ### set up the endpoint
     networkif = ReorderLinkControl()
     networkif.link_bw = "4GB/s"
-    networkif.input_buf_size = "1kB"
-    networkif.output_buf_size = "1kB"
+    networkif.input_buf_size = "8kB"
+    networkif.output_buf_size = "8kB"
 
     ep = EmberMPIJob(0,topo.getNumNodes())
     ep.network_interface = networkif
@@ -51,6 +57,17 @@ def example():
     system.allocateNodes(ep,"linear")
 
     system.build()
+
+
+    # sst.setStatisticLoadLevel(7)
+    # sst.Component("c0", "ember")
+    # sst.enableAllStatisticsForComponentName("ember.ExampleMotif")
+    # params = { "rate" : "500ns" } # Report statistics every 500ns
+    # sst.enableAllStatisticsForAllComponents(params)
+    # sst.enableStatisticForComponentName("c0", "time-Send", params, True)
+    # sst.setStatisticOutput("sst.statOutputConsole")
+    # params = { "filepath" : "sim_output.csv", "separator" : ", " }
+    # statOutput.addParams(params)
 
 if __name__ == "__main__":
     example()

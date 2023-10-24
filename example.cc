@@ -33,9 +33,12 @@ EmberExampleGenerator::EmberExampleGenerator(SST::ComponentId_t id,
 	m_count      = (uint32_t) params.find("arg.count", 1);
 	m_redRoot    = (uint32_t) params.find("arg.root", 0);
 
-    memSetBacked();
-    m_sendBuf = (char *)memAlloc(32);
-    m_recvBuf = (char *)memAlloc(32);
+    // memSetBacked();
+    m_sendBuf = (char *)memAlloc(1024);
+    m_recvBuf = (char *)memAlloc(1024);
+
+    // shmemsBuf= (char *)memAlloc(32);
+    // shmem_recv= (char *)memAlloc(32);
 
 }
 
@@ -44,7 +47,7 @@ bool EmberExampleGenerator::generate( std::queue<EmberEvent*>& evQ) {
     if ( m_loopIndex == m_iterations ) {
         if ( 0 == rank() ) {
             int source = (rank() + size() - 1) % size();
-            printf("Received \"%s\" from process %d.\n", m_recvBuf, source);
+            // printf("Received \"%s\" from process %d.\n", m_recvBuf, source);
         }
         return true;
     }
@@ -53,15 +56,19 @@ bool EmberExampleGenerator::generate( std::queue<EmberEvent*>& evQ) {
         verbose(CALL_INFO, 1, 0, "rank=%d size=%d\n", rank(), size());
     }
 
+    enQ_init( evQ );
+    // enQ_malloc( evQ, &m_src, m_nelems * sizeof(TYPE) * 2);
+
+
 	// char *sbuf = (char *)memAlloc(32);
 	// char rbuf[32];
 	int source = (rank() + size() - 1) % size();
 	int dest = (rank() + 1) % size();
-	sprintf(m_sendBuf, "hello from process %d", rank());
+	// sprintf(m_sendBuf, "hello from process %d", rank());
 	// printf("sbuf contains %s\n", sbuf);
 
-	enQ_send( evQ, m_sendBuf, 32, CHAR, dest, 32, GroupWorld );
-	enQ_recv( evQ, m_recvBuf, 32, CHAR, source, 32, GroupWorld );
+	enQ_send( evQ, m_sendBuf, 1024, CHAR, dest, 1024, GroupWorld );
+	enQ_recv( evQ, m_recvBuf, 1024, CHAR, source, 1024, GroupWorld );
 	// printf("Received \"%s\" from process %d.\n", m_recvBuf, source);
 
     // enQ_compute( evQ, 11000 );
