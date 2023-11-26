@@ -22,6 +22,41 @@
 namespace SST {
 namespace Ember {
 
+typedef int64_t GraphElem;
+typedef double GraphWeight;
+
+struct Edge
+{
+    GraphElem tail_;
+    GraphWeight weight_;
+    
+    Edge(): tail_(-1), weight_(0.0) {}
+};
+
+class Graph {
+    public:
+        Graph(GraphElem nv, GraphElem ne): 
+            nv_(nv), ne_(ne) 
+        {
+            edge_indices_   = new GraphElem[nv_+1];
+            edge_list_      = new Edge[ne_];
+            vertex_degree_  = new GraphWeight[nv_];
+        }
+
+        void set_nedges(GraphElem ne) 
+        { 
+            ne_ = ne; 
+            edge_list_      = new Edge[ne_];
+        }
+        
+        // public variables
+        GraphElem *edge_indices_;
+        Edge *edge_list_;
+        GraphWeight *vertex_degree_;
+    private:
+        GraphElem nv_, ne_;
+};
+
 class EmberLikeNEVEGenerator : public EmberMessagePassingGenerator {
 
 public:

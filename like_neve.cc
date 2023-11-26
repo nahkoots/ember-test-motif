@@ -12,12 +12,18 @@
 // This file is part of the SST software package. For license
 // information, see the LICENSE file in the top level directory of the
 // distribution.
+#include <stdlib.h>
+#include <fstream>
+#include <climits>
 
 
 #include <sst_config.h>
 #include "like_neve.h"
 
 using namespace SST::Ember;
+
+typedef int64_t GraphElem;
+typedef double GraphWeight;
 
 static void test(void* a, void* b, int* len, PayloadDataType* ) {
 
@@ -44,7 +50,24 @@ EmberLikeNEVEGenerator::EmberLikeNEVEGenerator(SST::ComponentId_t id,
 
 }
 
-void ReadProcessGraph2(char *filename) {
+void ReadProcessGraph(char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf(" Error opening file! \n");
+        // exit();
+    }
+
+    int64_t M_, N_;
+    fread(&M_, sizeof(int64_t), 1, file);
+    fread(&N_, sizeof(int64_t), 1, file);
+    
+    size_t tot_bytes=(M_+1)*sizeof(int64_t);
+    size_t offset = 2*sizeof(int64_t);
+}
+
+
+
+Graph *ReadProcessGraph2(char *filename) {
     std::ifstream file;
 
     file.open(filename, std::ios::in | std::ios::binary); 
@@ -54,6 +77,8 @@ void ReadProcessGraph2(char *filename) {
         std::cout << " Error opening file! " << std::endl;
         std::abort();
     }
+
+    GraphElem M_, N_;
 
     // read the dimensions 
     file.read(reinterpret_cast<char*>(&M_), sizeof(GraphElem));
@@ -89,7 +114,7 @@ void ReadProcessGraph2(char *filename) {
     tot_bytes = N_*(sizeof(Edge));
     offset = 2*sizeof(GraphElem) + (M_+1)*sizeof(GraphElem) + g->edge_indices_[0]*(sizeof(Edge));
     if (tot_bytes < INT_MAX)
-        file.read(&g->edge_list_[0], tot_bytes);
+        file.read(reinterpret_cast<char*>(&g->edge_list_[0]), tot_bytes);
     else 
     {
         int chunk_bytes=INT_MAX;
@@ -98,7 +123,7 @@ void ReadProcessGraph2(char *filename) {
 
         while (transf_bytes < tot_bytes)
         {
-            file.read(&curr_poointer[offset], tot_bytes);
+            file.read(reinterpret_cast<char*>(&curr_pointer[offset]), tot_bytes);
             transf_bytes += chunk_bytes;
             offset += chunk_bytes;
             curr_pointer += chunk_bytes;
