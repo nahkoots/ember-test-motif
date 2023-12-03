@@ -47,27 +47,55 @@ EmberLikeNEVEGenerator::EmberLikeNEVEGenerator(SST::ComponentId_t id,
     last_time = getCurrentSimCycle();
     // shmemsBuf= (char *)memAlloc(32);
     // shmem_recv= (char *)memAlloc(32);
+    g = ReadProcessGraph("jgl009.ng");
 
-}
+    // printf("edge indices: \n");
+    // for (int i = 0; i < g->nv_; i ++) {
+    //     printf("%d ", g->edge_indices_[i]);
+    // }
+    // printf("\n\nedge list:\n");
 
-void ReadProcessGraph(char *filename) {
-    FILE *file = fopen(filename, "r");
-    if (!file) {
-        printf(" Error opening file! \n");
-        // exit();
+    // for (int i = 0; i < g->ne_; i ++) {
+    //     printf("(%d, %f) ", g->edge_list_[i].tail_, g->edge_list_[i].weight_);
+    // }
+    // printf("\n");
+
+
+    int current_row = 0;
+    for (int i = 0; i < g->ne_; i ++) {
+        if (i >= g->edge_indices_[current_row + 1]) {
+            current_row ++;
+        }
+        if (g->edge_list_[i].tail_ == current_row) {
+            continue;
+        }
+        if (g->edge_list_[i].tail_ == rank()) {
+            Edge *e = new Edge(current_row, g->edge_list_[i].weight_);
+            sources.push_back(*e);
+        }
+        if (current_row == rank()) {
+            targets.push_back(g->edge_list_[i]);
+        }
     }
 
-    int64_t M_, N_;
-    fread(&M_, sizeof(int64_t), 1, file);
-    fread(&N_, sizeof(int64_t), 1, file);
-    
-    size_t tot_bytes=(M_+1)*sizeof(int64_t);
-    size_t offset = 2*sizeof(int64_t);
+    // printf("sources and targets for rank 0:\n");
+    // if (rank() == 0) {
+    //     for (int i = 0; i < sources.size(); i ++) {
+    //         printf("(%d, %f) ", sources[i].tail_, sources[i].weight_);
+    //     }
+    //     printf("\n");
+    //     for (int i = 0; i < targets.size(); i ++) {
+    //         printf("(%d, %f) ", targets[i].tail_, targets[i].weight_);
+    //     }
+    //     printf("\n");
+    // }
+
+    // printf("done decoding csr\n");
+
 }
 
 
-
-Graph *ReadProcessGraph2(char *filename) {
+Graph *EmberLikeNEVEGenerator::ReadProcessGraph(const char *filename) {
     std::ifstream file;
 
     file.open(filename, std::ios::in | std::ios::binary); 
@@ -77,12 +105,12 @@ Graph *ReadProcessGraph2(char *filename) {
         std::cout << " Error opening file! " << std::endl;
         std::abort();
     }
-
     GraphElem M_, N_;
 
     // read the dimensions 
     file.read(reinterpret_cast<char*>(&M_), sizeof(GraphElem));
     file.read(reinterpret_cast<char*>(&N_), sizeof(GraphElem));
+
     // create local graph
     Graph *g = new Graph(M_, N_);
 
@@ -160,16 +188,28 @@ bool EmberLikeNEVEGenerator::generate( std::queue<EmberEvent*>& evQ) {
 
     if ( 0 == m_loopIndex ) {
         verbose(CALL_INFO, 1, 0, "rank=%d size=%d\n", rank(), size());
+        // printf("I (%d) send %d bytes to process 1.\n", rank(), )
     }
 
     enQ_init( evQ );
     // enQ_malloc( evQ, &m_src, m_nelems * sizeof(TYPE) * 2);
 
+    for (int i = 0; i < sources.size(); i ++) {
+        printf("(%d, %f) ", sources[i].tail_, sources[i].weight_);
+        printf("process %d recvs %f bytes from process %d.\n", rank(), message_size * sources[i].weight_, sources[i].tail_);
+        enQ_recv( evQ, m_recvBuf, message_size * sources[i].weight_, CHAR, sources[i].tail_, 0, GroupWorld );
+    }
+
+    for (int i = 0; i < targets.size(); i ++) {
+        printf("(%d, %f) ", targets[i].tail_, targets[i].weight_);
+        printf("process %d sends %f bytes to process %d.\n", rank(), message_size * targets[i].weight_, targets[i].tail_);
+        enQ_send( evQ, m_recvBuf, message_size * targets[i].weight_, CHAR, targets[i].tail_, 0, GroupWorld );
+    }
 
 	// char *sbuf = (char *)memAlloc(32);
 	// char rbuf[32];
-	int source = (rank() + size() - 1) % size();
-	int dest = (rank() + 1) % size();
+	// int source = (rank() + size() - 1) % size();
+	// int dest = (rank() + 1) % size();
 	// sprintf(m_sendBuf, "hello from process %d", rank());
 	// printf("sbuf contains %s\n", sbuf);
 	SST::UnitAlgebra time = getCoreTimeBase();
@@ -179,8 +219,8 @@ bool EmberLikeNEVEGenerator::generate( std::queue<EmberEvent*>& evQ) {
     // The core is counting time in units of 1 ps
 
     // send(Queue& q, const Hermes::MemAddr& payload, uint32_t count, PayloadDataType dtype, RankID dest, uint32_t tag, Communicator group)
-	enQ_send( evQ, m_sendBuf, message_size, CHAR, dest, 0, GroupWorld );
-	enQ_recv( evQ, m_recvBuf, message_size, CHAR, source, 0, GroupWorld );
+	// enQ_send( evQ, m_sendBuf, message_size, CHAR, dest, 0, GroupWorld );
+	// enQ_recv( evQ, m_recvBuf, message_size, CHAR, source, 0, GroupWorld );
 	// printf("Received \"%s\" from process %d.\n", m_recvBuf, source);
 
     // enQ_compute( evQ, 11000 );
@@ -193,5 +233,5 @@ bool EmberLikeNEVEGenerator::generate( std::queue<EmberEvent*>& evQ) {
     // }
     ++m_loopIndex;
     message_size *= 2;
-    return false;
+    return true;
 }

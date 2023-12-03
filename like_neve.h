@@ -31,6 +31,7 @@ struct Edge
     GraphWeight weight_;
     
     Edge(): tail_(-1), weight_(0.0) {}
+    Edge(GraphElem tail_, GraphWeight weight_): tail_(tail_), weight_(weight_) {}
 };
 
 class Graph {
@@ -40,7 +41,7 @@ class Graph {
         {
             edge_indices_   = new GraphElem[nv_+1];
             edge_list_      = new Edge[ne_];
-            vertex_degree_  = new GraphWeight[nv_];
+            // vertex_degree_  = new GraphWeight[nv_];
         }
 
         void set_nedges(GraphElem ne) 
@@ -52,8 +53,6 @@ class Graph {
         // public variables
         GraphElem *edge_indices_;
         Edge *edge_list_;
-        GraphWeight *vertex_degree_;
-    private:
         GraphElem nv_, ne_;
 };
 
@@ -105,6 +104,8 @@ public:
     bool generate( std::queue<EmberEvent*>& evQ);
 
 private:
+    Graph *ReadProcessGraph(const char *filename);
+
     uint32_t m_iterations;
     uint32_t m_count;
     char*    m_sendBuf;
@@ -113,6 +114,10 @@ private:
     uint32_t m_loopIndex;
     int message_size;
     SimTime_t last_time;
+
+    std::vector<Edge> targets;
+    std::vector<Edge> sources;
+    Graph *g;
 };
 
 }

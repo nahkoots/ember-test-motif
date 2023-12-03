@@ -17,7 +17,7 @@ def example():
 
     ### Setup the topology
     topo = topoDragonFly()
-    topo.hosts_per_router = 4
+    topo.hosts_per_router = 10
     topo.routers_per_group = 1
     topo.intergroup_links = 1
     topo.num_groups = 1
@@ -47,7 +47,7 @@ def example():
     ep = EmberMPIJob(0,topo.getNumNodes())
     ep.network_interface = networkif
     ep.addMotif("Init")
-    ep.addMotif("LikeOSU")
+    ep.addMotif("LikeNEVE")
     # ep.addMotif("Allgather")
     ep.addMotif("Fini")
     ep.nic.nic2host_lat= "100ns"
